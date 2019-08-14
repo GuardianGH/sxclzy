@@ -29,7 +29,7 @@ SL.start()  # 开始任务
 ```
 
 输出如下：
-https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-14%2017-59-16.png
+![Image text](https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-14%2017-59-16.png)
 
 
 关于时间设置
