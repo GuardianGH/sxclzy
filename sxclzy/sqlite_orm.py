@@ -1,5 +1,5 @@
 import logging
-from sxclzy.sqlite_model import *
+from sqlite_model import *
 
 
 class GetData:

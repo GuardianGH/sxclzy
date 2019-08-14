@@ -10,8 +10,8 @@ import datetime
 import prettytable as pt
 import psutil
 
-from sxclzy.sqlite_model import SxclzySchedule
-from sxclzy.sqlite_orm import GetData
+from sqlite_model import SxclzySchedule
+from sqlite_orm import GetData
 
 
 class Sxclzy:
