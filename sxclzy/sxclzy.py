@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 from inspect import isfunction
+from dill.source import getsource as gs
 import datetime
 
 import prettytable as pt
@@ -23,7 +24,7 @@ class Sxclzy:
         self.spider_task_dic = dict()
         self.MEMORY_THRESHOLD = 99
         self.CPU_THRESHOLD = 99
-        self.db = GetData()
+        self.db = GetData(self.logger)
         self.keys_set = {
             "year",
             "month",
@@ -69,12 +70,15 @@ class Sxclzy:
                 if key not in self.keys_set:
                     mean_key = self._check_key(key)
                     raise ValueError('found "{}" in your schedule dict, maybe you mean "{}"'.format(key, mean_key))
-            func_dump = pickle.dumps(func)
+            # func_dump = pickle.dumps(func)
+            func_name = re.findall('<function ([^ ]+) ', str(func))[0]
+            func_dump = pickle.dumps(self._check_func(gs(func)))
             schedule_dic_dump = pickle.dumps(schedule_dic)
             args_dump = pickle.dumps(args) if args is not None else ''
             run_times = 3471292800 if run_times is None else run_times
             self.db.add(model=SxclzySchedule,
                         add_dic={'name': name,
+                                 'func_name': func_name,
                                  'func': func_dump,
                                  'schedule': schedule_dic_dump,
                                  'run_times': run_times,
@@ -85,7 +89,7 @@ class Sxclzy:
             raise ValueError('schedule_dic expect a dict, not {}'.format(self._type_str(schedule_dic)))
 
     def get_schedules(self, print_pretty=False):
-        filed = ['id', 'name', 'func', 'schedule', 'args', 'status', 'create_time']
+        filed = ['id', 'name', 'func_name', 'func', 'schedule', 'args', 'status', 'create_time']
         self.lock.acquire()
         schedule_lis = self._get_db_schedule(filed=filed)
         self.lock.release()
@@ -107,19 +111,20 @@ class Sxclzy:
                 self.logger.warning('no such name in db : {}'.format(name))
 
     def _get_db_schedule(self, filed=None):
-        filed = ['name', 'func', 'schedule', 'run_times', 'args', 'status'] if filed is None else filed
+        filed = ['name', 'func_name', 'func', 'schedule', 'run_times', 'args', 'status'] if filed is None else filed
         filed = set(filed)
         filed.add('status')
         filed = list(filed)
         db_result = self.db.get(model_name='SxclzySchedule',
                                 key_list=filed)
         schedule_list = list()
-        for x in db_result:
-            if x.status != 0:
-                dic = dict()
-                for k in filed:
-                    dic[k] = eval('x.{}'.format(k))
-                schedule_list.append(dic)
+        if db_result:
+            for x in db_result:
+                if x.status != 0:
+                    dic = dict()
+                    for k in filed:
+                        dic[k] = eval('x.{}'.format(k))
+                    schedule_list.append(dic)
         return schedule_list
 
     def _task_scheduler(self, exit_if_no_missions):
@@ -161,7 +166,9 @@ class Sxclzy:
 
     def _runner(self, dic):
         status = int(dic.pop('status'))
-        func = dic.get('func')
+        func_code = dic.get('func')
+        exec(func_code)
+        func_name = dic.get('func_name')
         name = dic.get('name')
         args = dic.get('args')
         wait_time = dic.get('schedule')
@@ -178,32 +185,23 @@ class Sxclzy:
                     self.logger.warning('wait too long, cancel the job')
                     self.lock.acquire(blocking=True)
                     self.spider_task_dic[name] = run_status
+                    self._run_countdown(name=name)
                     self.lock.release()
                     return None
-            func(**args)
+            eval(func_name + '(**args)')
             run_status = 'ok'
         elif status == 2:
-            func(**args)
+            eval(func_name + '(**args)')
             run_status = 'ok'
         elif status == 3:
-            func(**args)
+            eval(func_name + '(**args)')
             run_status = 'ok'
         else:
-            func(**args)
+            eval(func_name + '(**args)')
             run_status = 'ok'
-        self.lock.acquire()
-        name_and_runtimes_in_db = self._get_db_schedule(filed=['name', 'run_times'])
-        self.lock.release()
-        run_time_in_db = [x.get('run_times') for x in name_and_runtimes_in_db if name == x.get('name')][0]
-        if run_time_in_db:
-            rt = int(run_time_in_db) - 1
-            self.lock.acquire()
-            update_sta = self.db.update(model_name='SxclzySchedule',
-                                        update_dic={'run_times': rt},
-                                        filter_dic={'name': name})
-            # print('update sta :', update_sta)
-            self.lock.release()
+
         self.lock.acquire(blocking=True)
+        self._run_countdown(name=name)
         self.spider_task_dic[name] = run_status
         self.lock.release()
 
@@ -455,6 +453,26 @@ class Sxclzy:
         best_math = sorted(count_dic, key=count_dic.__getitem__, reverse=True)[0]
         return best_math
 
+    def _run_countdown(self, name):
+        name_and_runtimes_in_db = self._get_db_schedule(filed=['name', 'run_times'])
+        run_time_in_db = [x.get('run_times') for x in name_and_runtimes_in_db if name == x.get('name')][0] if name_and_runtimes_in_db else 0
+        if run_time_in_db > 0:
+            rt = int(run_time_in_db) - 1
+            self.db.update(model_name='SxclzySchedule',
+                           update_dic={'run_times': rt},
+                           filter_dic={'name': name})
+
+    @staticmethod
+    def _check_func(func_str):
+        func_lis = func_str.split('\n')
+        sp = re.findall('( +)def ', func_lis[0])[0]
+        sps = len(sp)
+        new_func_lis = list()
+        for i in func_lis:
+            new_func_lis.append(i[sps:])
+        new_func_str = '\n'.join(new_func_lis)
+        return new_func_str
+
     @staticmethod
     def _set_logger(log_level=logging.INFO):
         logger = logging.getLogger("logger")
@@ -524,6 +542,7 @@ class Sxclzy:
             show_row = list()
             show_row.append(row_dic.get('id'))
             show_row.append(row_dic.get('name'))
+            show_row.append(row_dic.get('func_name'))
             show_row.append(pickle.loads(row_dic.get('func')))
             show_row.append(pickle.loads(row_dic.get('schedule')))
             show_row.append(pickle.loads(row_dic.get('args')))
@@ -541,12 +560,17 @@ if __name__ == "__main__":
     S = Sxclzy()
 
 
-    def test(name):
-        print('Hi {}! test is running'.format(name))
+    class A:
+        def test_a(self, name):
+            print('Hi {}! test is running'.format(name))
+            self.test_b(name)
+
+        def test_b(self, name):
+            print('call from test_a: ', 'hi {}'.format(name))
 
 
     S.add_schedule(name='func1',
-                   func=test,
+                   func=A.test_a,
                    schedule_dic={'second': '*/10'},
                    run_times=3,
                    args={'name': 'Lilei'},

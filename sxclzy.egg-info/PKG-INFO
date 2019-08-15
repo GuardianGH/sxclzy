@@ -36,6 +36,10 @@ Description: 这是做什么的？
         SL.start()  # 开始任务
         ```
         
+        输出如下：
+        ![Image text](https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-14%2017-59-16.png)
+        
+        
         关于时间设置
         ============
         “schedule_dic” 的值需要一个字典，类似：

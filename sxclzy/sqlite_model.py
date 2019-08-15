@@ -4,7 +4,6 @@ from sqlalchemy import create_engine, TEXT, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import sessionmaker
-from twisted.logger import Logger
 import datetime
 
 path = os.path.join(os.getcwd(), 'sqlite.db')
@@ -12,13 +11,12 @@ path = os.path.join(os.getcwd(), 'sqlite.db')
 engine = create_engine('sqlite:///{}?check_same_thread=False'.format(path), echo=False)
 Base = declarative_base()
 
-logger = Logger(namespace='- MODEL -')
-
 
 class SxclzySchedule(Base):
     __tablename__ = 'sxclzy_schedule'
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), unique=True)
+    func_name = Column(String(255), nullable=False)
     func = Column(LargeBinary, nullable=False)
     schedule = Column(LargeBinary, nullable=False)
     run_times = Column(Integer, nullable=False)

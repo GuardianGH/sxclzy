@@ -1,7 +1,6 @@
 import os
 
 from sqlalchemy import create_engine, TEXT, LargeBinary
-from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import sessionmaker

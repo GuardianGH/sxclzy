@@ -28,7 +28,33 @@ SL.add_schedule(
 SL.start()  # 开始任务
 ```
 
-输出如下：
+使用add_schedule 方法后，将在数据库中储存传入的任务函数源码，所以不必担心下次运行时代码丢失的问题
+但是必须要注意的是，暂时不支持传入类内方法，例如：
+```
+class A:
+    def test_a(self, name):
+        print('Hi {}! test is running'.format(name))
+        self.test_b(name)
+
+    def test_b(self, name):
+        print('call from test_a: ', 'hi {}'.format(name))
+
+
+a = A()
+test = a.test_a     # 类内方法
+
+SL = Sxclzy()
+SL.add_schedule(
+            name='func1',
+            func=test,      # 这样将报错
+            ...
+          )
+```
+
+上面的 class 内方法不会被正确调度运行
+暂时只支持传入完整的单独方法
+
+正确调度输出如下：
 ![Image text](https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-14%2017-59-16.png)
 
 
