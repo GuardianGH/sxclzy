@@ -536,7 +536,7 @@ class Sxclzy:
 
     @staticmethod
     def _print_out(lis):
-        filed = list(lis[0].keys())
+        filed = ['id', 'name', 'func_name', 'func', 'schedule', 'args', 'status', 'create_time', ]
         tb = pt.PrettyTable(field_names=filed)
         for row_dic in lis:
             show_row = list()
@@ -549,6 +549,7 @@ class Sxclzy:
             show_row.append(row_dic.get('status'))
             show_row.append(row_dic.get('create_time'))
             tb.add_row(show_row)
+        tb.align['func'] = 'l'
         print(tb)
 
     @staticmethod
@@ -569,12 +570,17 @@ if __name__ == "__main__":
             print('call from test_a: ', 'hi {}'.format(name))
 
 
+    def test(name):
+        print('Hi {}! test is running'.format(name))
+
+
     S.add_schedule(name='func1',
-                   func=A.test_a,
+                   func=test,
                    schedule_dic={'second': '*/10'},
                    run_times=3,
                    args={'name': 'Lilei'},
                    status=1,
                    overwrite_if_exist=True
                    )
-    S.start()
+    S.get_schedules(print_pretty=True)
+    # S.start()

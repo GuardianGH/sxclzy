@@ -19,8 +19,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'psutil==5.6.2',
-        'prettytable==0.7.2',
-        'SQLAlchemy==1.3.3',
+        'psutil>=5.6.2',
+        'prettytable>=0.7.2',
+        'SQLAlchemy>=1.3.3',
     ]
 )

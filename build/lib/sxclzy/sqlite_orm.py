@@ -1,11 +1,13 @@
 import logging
-from sqlite_model import *
+import datetime
+from sqlite_model import session, model_dic, SxclzySchedule
 
 
 class GetData:
 
-    def __init__(self):
+    def __init__(self, logger):
         super(GetData, self).__init__()
+        self.logger = logger
         try:
             session.commit()
         except Exception as E:
@@ -56,7 +58,7 @@ class GetData:
     def update(self, model_name, update_dic, filter_dic):
         model = model_dic.get(model_name)
         if not model:
-            logger.error('model name not in model dict')
+            self.logger.error('model name not in model dict')
             return None
         try:
             update_search = self.get(model_name=model_name, filter_dic=filter_dic, return_model_map=False)
@@ -71,13 +73,13 @@ class GetData:
                         add_sta = True
                 return add_sta
         except Exception as E:
-            logger.error('update fail: {}'.format(E))
+            self.logger.error('update fail: {}'.format(E))
             return False
 
     def delete_data(self, model_name, filter_dic=None):
         model = model_dic.get(model_name)
         if not model:
-            logger.error('model name not in model dict')
+            self.logger.error('model name not in model dict')
             return None
         del_search = self.get(model_name=model_name, filter_dic=filter_dic, return_model_map=False)
         try:
@@ -89,7 +91,3 @@ class GetData:
             logging.error('delete fail : {}'.format(E))
             return False
 
-
-if __name__ == "__main__":
-    from scrapydartx.sqlite_model import *
-    db = GetData()
