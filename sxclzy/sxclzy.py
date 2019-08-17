@@ -11,21 +11,21 @@ import datetime
 import prettytable as pt
 import psutil
 
-from sqlite_model import SxclzySchedule
-from sqlite_orm import GetData
+from .sqlite_model import SxclzySchedule
+from .sqlite_orm import GetData
 
 
 class Sxclzy:
 
     def __init__(self, log_level=None):
-        self.lock = threading.Lock()
+        self._lock = threading.Lock()
         log_level = logging.INFO if log_level is None else log_level
-        self.logger = self._set_logger(log_level)
-        self.spider_task_dic = dict()
+        self._logger = self._set_logger(log_level)
+        self._spider_task_dic = dict()
         self.MEMORY_THRESHOLD = 99
         self.CPU_THRESHOLD = 99
-        self.db = GetData(self.logger)
-        self.keys_set = {
+        self._db = GetData(self._logger)
+        self._keys_set = {
             "year",
             "month",
             "day",
@@ -34,9 +34,9 @@ class Sxclzy:
             "minute",
             "second",
         }
-        self.keys_set_lis = [[y for y in x] for x in self.keys_set]
+        self._keys_set_lis = [[y for y in x] for x in self._keys_set]
         time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.logger.info('initialize at: {}'.format(time_now))
+        self._logger.info('initialize at: {}'.format(time_now))
 
     def start(self, exit_if_no_missions=True):
         while True:
@@ -44,18 +44,18 @@ class Sxclzy:
             time.sleep(1)
 
     def add_schedule(self, name, func, schedule_dic, run_times=None, args=None, status=1, overwrite_if_exist=True):
-        self.lock.acquire()
+        self._lock.acquire()
         names_in_db = {x.get('name') for x in self._get_db_schedule(filed=['name'])}
-        self.lock.release()
+        self._lock.release()
         if not name or not isinstance(name, str):
             raise ValueError('name expect str type, not {}'.format(self._type_str(name)))
         if name in names_in_db:
             if not overwrite_if_exist:
                 raise ValueError('the name {} is already exist, please use another one'.format(name))
             else:
-                self.lock.acquire()
-                self.db.delete_data(model_name='SxclzySchedule', filter_dic={'name': name})
-                self.lock.release()
+                self._lock.acquire()
+                self._db.delete_data(model_name='SxclzySchedule', filter_dic={'name': name})
+                self._lock.release()
         if not isfunction(func):
             raise ValueError('func expect a function, not {}'.format(self._type_str(func)))
             # sys.exit(0)
@@ -67,7 +67,7 @@ class Sxclzy:
             if run_times is not None and not isinstance(run_times, int):
                 raise ValueError('the run_times expect a int type num, not {}'.format(self._type_str(run_times)))
             for key in schedule_dic.keys():
-                if key not in self.keys_set:
+                if key not in self._keys_set:
                     mean_key = self._check_key(key)
                     raise ValueError('found "{}" in your schedule dict, maybe you mean "{}"'.format(key, mean_key))
             # func_dump = pickle.dumps(func)
@@ -76,47 +76,47 @@ class Sxclzy:
             schedule_dic_dump = pickle.dumps(schedule_dic)
             args_dump = pickle.dumps(args) if args is not None else ''
             run_times = 3471292800 if run_times is None else run_times
-            self.db.add(model=SxclzySchedule,
-                        add_dic={'name': name,
+            self._db.add(model=SxclzySchedule,
+                         add_dic={'name': name,
                                  'func_name': func_name,
                                  'func': func_dump,
                                  'schedule': schedule_dic_dump,
                                  'run_times': run_times,
                                  'args': args_dump,
                                  'status': status})
-            self.logger.info('add success')
+            self._logger.info('add success')
         else:
             raise ValueError('schedule_dic expect a dict, not {}'.format(self._type_str(schedule_dic)))
 
     def get_schedules(self, print_pretty=False):
         filed = ['id', 'name', 'func_name', 'func', 'schedule', 'args', 'status', 'create_time']
-        self.lock.acquire()
+        self._lock.acquire()
         schedule_lis = self._get_db_schedule(filed=filed)
-        self.lock.release()
+        self._lock.release()
         if print_pretty:
             self._print_out(schedule_lis)
         return schedule_lis
 
     def clear_schedules(self, names=None):
-        self.lock.acquire()
+        self._lock.acquire()
         names_in_db = {x.get('name') for x in self._get_db_schedule(filed=['name'])}
-        self.lock.release()
+        self._lock.release()
         names = names_in_db if names is None else names
         for name in names:
             if name in names_in_db:
-                self.lock.acquire()
-                self.db.delete_data(model_name='SxclzySchedule', filter_dic={'name': name})
-                self.lock.release()
+                self._lock.acquire()
+                self._db.delete_data(model_name='SxclzySchedule', filter_dic={'name': name})
+                self._lock.release()
             else:
-                self.logger.warning('no such name in db : {}'.format(name))
+                self._logger.warning('no such name in db : {}'.format(name))
 
     def _get_db_schedule(self, filed=None):
         filed = ['name', 'func_name', 'func', 'schedule', 'run_times', 'args', 'status'] if filed is None else filed
         filed = set(filed)
         filed.add('status')
         filed = list(filed)
-        db_result = self.db.get(model_name='SxclzySchedule',
-                                key_list=filed)
+        db_result = self._db.get(model_name='SxclzySchedule',
+                                 key_list=filed)
         schedule_list = list()
         if db_result:
             for x in db_result:
@@ -128,9 +128,9 @@ class Sxclzy:
         return schedule_list
 
     def _task_scheduler(self, exit_if_no_missions):
-        self.lock.acquire()
+        self._lock.acquire()
         schedule_list_raw = self._get_db_schedule()
-        self.lock.release()
+        self._lock.release()
         s_sta = False
         if schedule_list_raw:
             for each_schedule in schedule_list_raw:
@@ -147,21 +147,21 @@ class Sxclzy:
                             each_schedule['schedule'] = next_time_sep
                             each_schedule['func'] = pickle.loads(each_schedule.get('func'))
                             each_schedule['args'] = pickle.loads(each_schedule.get('args'))
-                            self.lock.acquire(blocking=True)
-                            if self.spider_task_dic.get(name) != 'waiting':
-                                self.spider_task_dic[name] = 'waiting'
+                            self._lock.acquire(blocking=True)
+                            if self._spider_task_dic.get(name) != 'waiting':
+                                self._spider_task_dic[name] = 'waiting'
                                 t = threading.Thread(target=self._runner, args=(each_schedule,))
                                 try:
                                     t.start()
                                 except Exception as E:
-                                    self.logger.warning('function schedule error: {}'.format(E))
-                            self.lock.release()
+                                    self._logger.warning('function schedule error: {}'.format(E))
+                            self._lock.release()
                     except ValueError:
-                        self.logger.error('schedule error, please check the database')
+                        self._logger.error('schedule error, please check the database')
         if not s_sta:
-            self.logger.info('no missions')
+            self._logger.info('no missions')
             if exit_if_no_missions:
-                self.logger.info('system exiting')
+                self._logger.info('system exiting')
                 sys.exit(0)
 
     def _runner(self, dic):
@@ -172,21 +172,21 @@ class Sxclzy:
         name = dic.get('name')
         args = dic.get('args')
         wait_time = dic.get('schedule')
-        self.logger.info('function {} is waiting, countdown {}s'.format(name, wait_time))
+        self._logger.info('function {} is waiting, countdown {}s'.format(name, wait_time))
         time.sleep(wait_time - 1)
         run_status = None
         if status == 1:
             another_wait_time = 0
             while not self._is_system_ok():
-                self.logger.warning('system is fully functioning, wait another 2 seconds to run schedule')
+                self._logger.warning('system is fully functioning, wait another 2 seconds to run schedule')
                 time.sleep(2)
                 another_wait_time += 3
                 if another_wait_time >= (wait_time - 10):
-                    self.logger.warning('wait too long, cancel the job')
-                    self.lock.acquire(blocking=True)
-                    self.spider_task_dic[name] = run_status
+                    self._logger.warning('wait too long, cancel the job')
+                    self._lock.acquire(blocking=True)
+                    self._spider_task_dic[name] = run_status
                     self._run_countdown(name=name)
-                    self.lock.release()
+                    self._lock.release()
                     return None
             eval(func_name + '(**args)')
             run_status = 'ok'
@@ -200,10 +200,10 @@ class Sxclzy:
             eval(func_name + '(**args)')
             run_status = 'ok'
 
-        self.lock.acquire(blocking=True)
+        self._lock.acquire(blocking=True)
         self._run_countdown(name=name)
-        self.spider_task_dic[name] = run_status
-        self.lock.release()
+        self._spider_task_dic[name] = run_status
+        self._lock.release()
 
     def _cal_time_sep(self,
                       year='*',
@@ -443,7 +443,7 @@ class Sxclzy:
     def _check_key(self, key):
         key_lis = [x for x in key]
         count_dic = dict()
-        for ksl in self.keys_set_lis:
+        for ksl in self._keys_set_lis:
             o_key = ''.join(ksl)
             score = 0
             for k in key_lis:
@@ -458,9 +458,9 @@ class Sxclzy:
         run_time_in_db = [x.get('run_times') for x in name_and_runtimes_in_db if name == x.get('name')][0] if name_and_runtimes_in_db else 0
         if run_time_in_db > 0:
             rt = int(run_time_in_db) - 1
-            self.db.update(model_name='SxclzySchedule',
-                           update_dic={'run_times': rt},
-                           filter_dic={'name': name})
+            self._db.update(model_name='SxclzySchedule',
+                            update_dic={'run_times': rt},
+                            filter_dic={'name': name})
 
     @staticmethod
     def _check_func(func_str):

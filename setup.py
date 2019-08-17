@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="sxclzy",
-    version="0.1.1",
+    version="0.1.4",
     author="GuardianAngel",
     author_email="zhling2012@live.com",
     description="a tool to schedule your functions",
@@ -22,5 +22,6 @@ setuptools.setup(
         'psutil>=5.6.2',
         'prettytable>=0.7.2',
         'SQLAlchemy>=1.3.3',
+        'dill>=0.3.0',
     ]
 )

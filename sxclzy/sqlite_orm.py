@@ -1,6 +1,6 @@
 import logging
 import datetime
-from sqlite_model import session, model_dic, SxclzySchedule
+from .sqlite_model import session, model_dic, SxclzySchedule
 
 
 class GetData:
