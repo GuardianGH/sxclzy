@@ -11,8 +11,8 @@ import datetime
 import prettytable as pt
 import psutil
 
-from .sqlite_model import SxclzySchedule
-from .sqlite_orm import GetData
+from sqlite_model import SxclzySchedule
+from sqlite_orm import GetData
 
 
 class Sxclzy:
@@ -91,7 +91,7 @@ class Sxclzy:
     def get_schedules(self, print_pretty=False):
         filed = ['id', 'name', 'func_name', 'func', 'schedule', 'args', 'status', 'create_time']
         self._lock.acquire()
-        schedule_lis = self._get_db_schedule(filed=filed)
+        schedule_lis = self._get_db_schedule(filed=filed, decode_data=True)
         self._lock.release()
         if print_pretty:
             self._print_out(schedule_lis)
@@ -110,7 +110,7 @@ class Sxclzy:
             else:
                 self._logger.warning('no such name in db : {}'.format(name))
 
-    def _get_db_schedule(self, filed=None):
+    def _get_db_schedule(self, filed=None, decode_data=False):
         filed = ['name', 'func_name', 'func', 'schedule', 'run_times', 'args', 'status'] if filed is None else filed
         filed = set(filed)
         filed.add('status')
@@ -124,6 +124,8 @@ class Sxclzy:
                     dic = dict()
                     for k in filed:
                         dic[k] = eval('x.{}'.format(k))
+                        if decode_data and k in {'func', 'schedule', 'args'}:
+                            dic[k] = pickle.loads(eval('x.{}'.format(k)))
                     schedule_list.append(dic)
         return schedule_list
 
@@ -543,9 +545,9 @@ class Sxclzy:
             show_row.append(row_dic.get('id'))
             show_row.append(row_dic.get('name'))
             show_row.append(row_dic.get('func_name'))
-            show_row.append(pickle.loads(row_dic.get('func')))
-            show_row.append(pickle.loads(row_dic.get('schedule')))
-            show_row.append(pickle.loads(row_dic.get('args')))
+            show_row.append(row_dic.get('func'))
+            show_row.append(row_dic.get('schedule'))
+            show_row.append(row_dic.get('args'))
             show_row.append(row_dic.get('status'))
             show_row.append(row_dic.get('create_time'))
             tb.add_row(show_row)
@@ -571,7 +573,7 @@ if __name__ == "__main__":
 
 
     def test(name):
-        print('Hi {}! test is running'.format(name))
+        print('Hi {}! '.format(name))
 
 
     S.add_schedule(name='func1',
@@ -582,5 +584,6 @@ if __name__ == "__main__":
                    status=1,
                    overwrite_if_exist=True
                    )
-    S.get_schedules(print_pretty=True)
+    get_res = S.get_schedules(print_pretty=True)
+    print(get_res)
     # S.start()

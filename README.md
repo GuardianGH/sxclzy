@@ -57,6 +57,16 @@ SL.add_schedule(
 正确调度输出如下：
 ![Image text](https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-14%2017-59-16.png)
 
+查看已导入的任务列表：
+```
+get_res = SL.get_schedules(print_pretty=False)
+```
+返回的 get_res 为一个列表字典：
+```
+[{'schedule': {'second': '*/10'}, 'create_time': '2019-08-17 15:49:26', 'args': {'name': 'Lilei'}, 'func_name': 'test', 'func': "def test(name):\n    print('Hi {}! '.format(name))\n", 'status': 1, 'name': 'func1', 'id': 1}]
+```
+若您只是临时查看，建议将 get_schedules 的参数 print_pretty 设置为 True，程序将调用 prettytable 打印出一个好看的表格：
+![Image text](https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-14%2017-59-16.png)
 
 关于时间设置
 ============
@@ -81,11 +91,6 @@ SL.add_schedule(
 
 也可以是只有分钟，或者只有秒，或者只有小时、天、月、年，程序将自动计算下次到达设定的时间的时间间隔，
 
-例如只给定：
-```
-{'hour': 10}
-```
-则任务会在从明天开始的每一天的10点的当前分秒数启动
 例如当设置为：
 ```
 {"hour": 10}
@@ -100,7 +105,10 @@ SL.add_schedule(
 
 需要注意的是，设定的月为1~12， 日小于等于月最大天数，小时为0-23， 分钟数0-59，秒数0-59
 
-此外，我想你应该已经完全了解在参数中加 “ * / ” 或 不加 “ * / ”的作用了，若仍觉得不清楚，直接使用它你会发现其中的含义。
+至此，我想你应该已经完全了解在参数中加 “ * / ” 或 不加 “ * / ”的作用了，若仍觉得不清楚，
+
+直接使用它你会发现其中的含义。
+----------------------------
 
 此外还可以设定星期数，例如：
 ```
