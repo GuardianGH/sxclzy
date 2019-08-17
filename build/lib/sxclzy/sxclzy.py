@@ -98,6 +98,8 @@ class Sxclzy:
         return schedule_lis
 
     def clear_schedules(self, names=None):
+        if isinstance(names, str):
+            names = [names]
         self._lock.acquire()
         names_in_db = {x.get('name') for x in self._get_db_schedule(filed=['name'])}
         self._lock.release()
@@ -109,6 +111,7 @@ class Sxclzy:
                 self._lock.release()
             else:
                 self._logger.warning('no such name in db : {}'.format(name))
+        self._logger.info('schedules clear up: {}'.format(str(list(names))))
 
     def _get_db_schedule(self, filed=None, decode_data=False):
         filed = ['name', 'func_name', 'func', 'schedule', 'run_times', 'args', 'status'] if filed is None else filed
@@ -586,4 +589,5 @@ if __name__ == "__main__":
                    )
     get_res = S.get_schedules(print_pretty=True)
     print(get_res)
+    # S.clear_schedules()
     # S.start()

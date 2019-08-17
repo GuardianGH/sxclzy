@@ -68,6 +68,18 @@ get_res = SL.get_schedules(print_pretty=False)
 若您只是临时查看，建议将 get_schedules 的参数 print_pretty 设置为 True，程序将调用 prettytable 打印出一个好看的表格：
 ![Image text](https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-17%2015-39-33.png?raw=true)
 
+删除已有的调度任务：
+```
+SL.clear_schedules(names=None)
+```
+参数 names 可以传入需要删除的任务名称，可以是单个名称，也可以是名称的列表
+
+删除成功将输出日志：
+```
+2019-08-17 16:07:03,832 >>> schedules clear up: ['func1']
+```
+
+
 关于时间设置
 ============
 “schedule_dic” 的值需要一个字典，类似：
