@@ -63,7 +63,7 @@ Description: 这是做什么的？
         暂时只支持传入完整的单独方法
         
         正确调度输出如下：
-        ![Image text](https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-14%2017-59-16.png)
+        ![Image text](https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-14%2017-59-16.png?raw=true)
         
         查看已导入的任务列表：
         ```
@@ -74,7 +74,7 @@ Description: 这是做什么的？
         [{'schedule': {'second': '*/10'}, 'create_time': '2019-08-17 15:49:26', 'args': {'name': 'Lilei'}, 'func_name': 'test', 'func': "def test(name):\n    print('Hi {}! '.format(name))\n", 'status': 1, 'name': 'func1', 'id': 1}]
         ```
         若您只是临时查看，建议将 get_schedules 的参数 print_pretty 设置为 True，程序将调用 prettytable 打印出一个好看的表格：
-        ![Image text](https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-14%2017-59-16.png)
+        ![Image text](https://github.com/GuardianGH/sxclzy/blob/master/images/2019-08-17%2015-39-33.png?raw=true)
         
         关于时间设置
         ============
