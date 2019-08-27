@@ -13,6 +13,7 @@ import psutil
 
 from sqlite_model import SxclzySchedule
 from sqlite_orm import GetData
+from Dict import Dict
 
 
 class Sxclzy:
@@ -78,12 +79,12 @@ class Sxclzy:
             run_times = 3471292800 if run_times is None else run_times
             self._db.add(model=SxclzySchedule,
                          add_dic={'name': name,
-                                 'func_name': func_name,
-                                 'func': func_dump,
-                                 'schedule': schedule_dic_dump,
-                                 'run_times': run_times,
-                                 'args': args_dump,
-                                 'status': status})
+                                  'func_name': func_name,
+                                  'func': func_dump,
+                                  'schedule': schedule_dic_dump,
+                                  'run_times': run_times,
+                                  'args': args_dump,
+                                  'status': status})
             self._logger.info('add success')
         else:
             raise ValueError('schedule_dic expect a dict, not {}'.format(self._type_str(schedule_dic)))
@@ -112,6 +113,21 @@ class Sxclzy:
             else:
                 self._logger.warning('no such name in db : {}'.format(name))
         self._logger.info('schedules clear up: {}'.format(str(list(names))))
+
+    def count_down(self, data_time, time_format='y-m-d H:M:S'):
+        str_location = self._locate_str(raw_str=data_time, method=time_format)
+        dic = Dict(str_location)
+        time_dic = {
+            'year': dic.gets(['y', 'Y', '年'], '*'),
+            'month': dic.gets(['m', '月'], '*'),
+            'day': dic.gets(['d', '日'], '*'),
+            'week': dic.gets(['w', 'W', '星期'], '*'),
+            'hour': dic.gets(['H', 'h', '时'], '*'),
+            'minute': dic.gets(['M', '分'], '*'),
+            'second': dic.gets(['S', '秒'], '*'),
+        }
+        next_time_sep = self._cal_time_sep(**time_dic)
+        return next_time_sep
 
     def _get_db_schedule(self, filed=None, decode_data=False):
         filed = ['name', 'func_name', 'func', 'schedule', 'run_times', 'args', 'status'] if filed is None else filed
@@ -460,12 +476,40 @@ class Sxclzy:
 
     def _run_countdown(self, name):
         name_and_runtimes_in_db = self._get_db_schedule(filed=['name', 'run_times'])
-        run_time_in_db = [x.get('run_times') for x in name_and_runtimes_in_db if name == x.get('name')][0] if name_and_runtimes_in_db else 0
+        run_time_in_db = [x.get('run_times') for x in name_and_runtimes_in_db if name == x.get('name')][
+            0] if name_and_runtimes_in_db else 0
         if run_time_in_db > 0:
             rt = int(run_time_in_db) - 1
             self._db.update(model_name='SxclzySchedule',
                             update_dic={'run_times': rt},
                             filter_dic={'name': name})
+
+    @staticmethod
+    def _locate_str(raw_str, method, return_as_list=False):
+        raw_str = raw_str.strip()
+        method = method.strip()
+        new_sep_str = '^>^ sep ^<^'
+        method_lis = re.sub('([^\u4e00-\u9fa5a-zA-Z]+)', new_sep_str, method).split(new_sep_str)
+        sep_str = re.findall('([^\u4e00-\u9fa5a-zA-Z]+)', method)
+        sep_lis = list(set(sep_str))
+        sep_index_set = set()
+        raw_str_lis = [x for x in raw_str]
+        for sep in sep_lis:
+            sep_index = 0
+            while True:
+                if sep_index < 0:
+                    break
+                sep_index = raw_str.find(sep, sep_index + 1)
+                if sep_index > 0:
+                    sep_index_set.add(sep_index)
+
+        for sep_i in sep_index_set:
+            raw_str_lis[sep_i] = new_sep_str
+        new_lis = ''.join(raw_str_lis).split(new_sep_str)
+        if return_as_list:
+            return new_lis
+        new_dic = {n: v for n, v in zip(method_lis, new_lis)}
+        return new_dic
 
     @staticmethod
     def _check_func(func_str):
@@ -565,6 +609,7 @@ class Sxclzy:
 if __name__ == "__main__":
     S = Sxclzy()
 
+    S.count_down('08-19', 'm-d')
 
     class A:
         def test_a(self, name):

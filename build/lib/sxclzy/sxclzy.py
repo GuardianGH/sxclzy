@@ -11,8 +11,8 @@ import datetime
 import prettytable as pt
 import psutil
 
-from sqlite_model import SxclzySchedule
-from sqlite_orm import GetData
+from .sqlite_model import SxclzySchedule
+from .sqlite_orm import GetData
 
 
 class Sxclzy:

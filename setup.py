@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="sxclzy",
-    version="0.1.6",
+    version="0.1.7",
     author="GuardianAngel",
     author_email="zhling2012@live.com",
     description="a tool to schedule your functions",
