@@ -647,34 +647,34 @@ class Sxclzy:
         _type = re.findall('\'([^\']+)\'', str(type(thing)))[0]
 
 
-# if __name__ == "__main__":
-S = Sxclzy()
+if __name__ == "__main__":
+    S = Sxclzy()
 
-# S.count_down('08-19', 'm-d')
-
-
-class A:
-    def test_a(self, name):
-        print('Hi {}! test is running'.format(name))
-        self.test_b(name)
-
-    def test_b(self, name):
-        print('call from test_a: ', 'hi {}'.format(name))
+    # S.count_down('08-19', 'm-d')
 
 
-def test(name):
-    print('Hi {}! '.format(name))
+    class A:
+        def test_a(self, name):
+            print('Hi {}! test is running'.format(name))
+            self.test_b(name)
+
+        def test_b(self, name):
+            print('call from test_a: ', 'hi {}'.format(name))
 
 
-S.add_schedule(name='func1',
-               func=test,
-               schedule={'second': '*/10'},
-               run_times=3,
-               args={'name': 'Lilei'},
-               status=1,
-               overwrite_if_exist=True
-               )
-# get_res = S.get_schedules(print_pretty=True)
-# print(get_res)
-# S.clear_schedules()
-S.start()
+    def test(name):
+        print('Hi {}! '.format(name))
+
+
+    S.add_schedule(name='func1',
+                   func=test,
+                   schedule={'second': '*/10'},
+                   run_times=3,
+                   args={'name': 'Lilei'},
+                   status=1,
+                   overwrite_if_exist=True
+                   )
+    # get_res = S.get_schedules(print_pretty=True)
+    # print(get_res)
+    # S.clear_schedules()
+    S.start()
