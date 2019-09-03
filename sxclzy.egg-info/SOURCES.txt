@@ -1,5 +1,6 @@
 README.md
 setup.py
+sxclzy/Dict.py
 sxclzy/__init__.py
 sxclzy/sqlite_model.py
 sxclzy/sqlite_orm.py

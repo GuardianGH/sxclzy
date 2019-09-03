@@ -13,6 +13,7 @@ import psutil
 
 from .sqlite_model import SxclzySchedule
 from .sqlite_orm import GetData
+from .Dict import Dict
 
 
 class Sxclzy:
@@ -33,6 +34,22 @@ class Sxclzy:
             "hour",
             "minute",
             "second",
+            "y",
+            "m",
+            "d",
+            "w",
+            "H",
+            "M",
+            "S",
+        }
+        self._keys_dic = {
+            "y": "year",
+            "m": "month",
+            "d": "day",
+            "w": "week",
+            "H": "hour",
+            "M": "minute",
+            "S": "second",
         }
         self._keys_set_lis = [[y for y in x] for x in self._keys_set]
         time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -43,7 +60,7 @@ class Sxclzy:
             self._task_scheduler(exit_if_no_missions)
             time.sleep(1)
 
-    def add_schedule(self, name, func, schedule_dic, run_times=None, args=None, status=1, overwrite_if_exist=True):
+    def add_schedule(self, name, func, schedule, run_times=None, args=None, status=1, overwrite_if_exist=True):
         self._lock.acquire()
         names_in_db = {x.get('name') for x in self._get_db_schedule(filed=['name'])}
         self._lock.release()
@@ -58,35 +75,53 @@ class Sxclzy:
                 self._lock.release()
         if not isfunction(func):
             raise ValueError('func expect a function, not {}'.format(self._type_str(func)))
-            # sys.exit(0)
         if not isinstance(status, int):
             raise ValueError('status expect int, not {}'.format(self._type_str(status)))
         if not isinstance(args, dict):
             raise ValueError('args expect dict, not {}'.format(self._type_str(args)))
-        if isinstance(schedule_dic, dict):
+        if isinstance(schedule, dict):
             if run_times is not None and not isinstance(run_times, int):
                 raise ValueError('the run_times expect a int type num, not {}'.format(self._type_str(run_times)))
-            for key in schedule_dic.keys():
+            for key in schedule.keys():
                 if key not in self._keys_set:
                     mean_key = self._check_key(key)
                     raise ValueError('found "{}" in your schedule dict, maybe you mean "{}"'.format(key, mean_key))
-            # func_dump = pickle.dumps(func)
+                if key in self._keys_dic:
+                    schedule[key] = self._keys_dic[key]
             func_name = re.findall('<function ([^ ]+) ', str(func))[0]
             func_dump = pickle.dumps(self._check_func(gs(func)))
-            schedule_dic_dump = pickle.dumps(schedule_dic)
+            schedule_dic_dump = pickle.dumps(schedule)
             args_dump = pickle.dumps(args) if args is not None else ''
             run_times = 3471292800 if run_times is None else run_times
             self._db.add(model=SxclzySchedule,
                          add_dic={'name': name,
-                                 'func_name': func_name,
-                                 'func': func_dump,
-                                 'schedule': schedule_dic_dump,
-                                 'run_times': run_times,
-                                 'args': args_dump,
-                                 'status': status})
+                                  'func_name': func_name,
+                                  'func': func_dump,
+                                  'schedule': schedule_dic_dump,
+                                  'run_times': run_times,
+                                  'args': args_dump,
+                                  'status': status})
+            self._logger.info('add success')
+        elif isinstance(schedule, str):
+            if not re.findall('(2[0-9]{3}),(0?[0-9]|1[0-2]),(0?[1-9]|[12][0-9]|3[01]),([0-1]?[0-9]|2[0-3]),(0?[0-9]|['
+                              '1-5][0-9]),(0?[0-9]|[1-5][0-9])', schedule):
+                raise ValueError('sth wrong with your schedule setting, require a str type like : 2019,09,13,13,24,00')
+            func_name = re.findall('<function ([^ ]+) ', str(func))[0]
+            func_dump = pickle.dumps(self._check_func(gs(func)))
+            schedule_dic_dump = pickle.dumps(schedule)
+            args_dump = pickle.dumps(args) if args is not None else ''
+            run_times = 3471292800 if run_times is None else run_times
+            self._db.add(model=SxclzySchedule,
+                         add_dic={'name': name,
+                                  'func_name': func_name,
+                                  'func': func_dump,
+                                  'schedule': schedule_dic_dump,
+                                  'run_times': run_times,
+                                  'args': args_dump,
+                                  'status': status})
             self._logger.info('add success')
         else:
-            raise ValueError('schedule_dic expect a dict, not {}'.format(self._type_str(schedule_dic)))
+            raise ValueError('schedule_dic expect a dict, not {}'.format(self._type_str(schedule)))
 
     def get_schedules(self, print_pretty=False):
         filed = ['id', 'name', 'func_name', 'func', 'schedule', 'args', 'status', 'create_time']
@@ -112,6 +147,21 @@ class Sxclzy:
             else:
                 self._logger.warning('no such name in db : {}'.format(name))
         self._logger.info('schedules clear up: {}'.format(str(list(names))))
+
+    def count_down(self, data_time, time_format='y-m-d H:M:S'):
+        str_location = self._locate_str(raw_str=data_time, method=time_format)
+        dic = Dict(str_location)
+        time_dic = {
+            'year': dic.gets(['y', 'Y', '年'], '*'),
+            'month': dic.gets(['m', '月'], '*'),
+            'day': dic.gets(['d', '日'], '*'),
+            'week': dic.gets(['w', 'W', '星期'], '*'),
+            'hour': dic.gets(['H', 'h', '时'], '*'),
+            'minute': dic.gets(['M', '分'], '*'),
+            'second': dic.gets(['S', '秒'], '*'),
+        }
+        next_time_sep = self._cal_time_sep(**time_dic)
+        return next_time_sep
 
     def _get_db_schedule(self, filed=None, decode_data=False):
         filed = ['name', 'func_name', 'func', 'schedule', 'run_times', 'args', 'status'] if filed is None else filed
@@ -146,7 +196,10 @@ class Sxclzy:
                     name = each_schedule.get('name')
                     s_sta = True
                     try:
-                        next_time_sep = self._cal_time_sep(**schedule)
+                        if isinstance(schedule, dict):
+                            next_time_sep = self._cal_time_sep(**schedule)
+                        else:
+                            next_time_sep = self._cal_time_sep(schedule_str=schedule, is_str=True)
                         next_time_sep = int(next_time_sep) + 1
                         if next_time_sep > 1:
                             each_schedule['schedule'] = next_time_sep
@@ -166,7 +219,7 @@ class Sxclzy:
         if not s_sta:
             self._logger.info('no missions')
             if exit_if_no_missions:
-                self._logger.info('system exiting')
+                self._logger.info('system exit')
                 sys.exit(0)
 
     def _runner(self, dic):
@@ -218,12 +271,16 @@ class Sxclzy:
                       hour='*',
                       minute='*',
                       second='*',
+                      schedule_str=None,
+                      is_str=False
                       ):
         """
             "%Y-%m-%d %H:%M:%S %w"
-
         """
-
+        if is_str:
+            s = [int(x) for x in schedule_str.split(',')]
+            time_sep = (datetime.datetime(s[0], s[1], s[2], s[3], s[4], s[5]) - datetime.datetime.now()).total_seconds()
+            return time_sep
         y = int(time.strftime("%Y", time.localtime()))
         if year != '*' and '*' in year:
             y = int(year.split('/')[-1]) + y
@@ -460,7 +517,8 @@ class Sxclzy:
 
     def _run_countdown(self, name):
         name_and_runtimes_in_db = self._get_db_schedule(filed=['name', 'run_times'])
-        run_time_in_db = [x.get('run_times') for x in name_and_runtimes_in_db if name == x.get('name')][0] if name_and_runtimes_in_db else 0
+        run_time_in_db = [x.get('run_times') for x in name_and_runtimes_in_db if name == x.get('name')][
+            0] if name_and_runtimes_in_db else 0
         if run_time_in_db > 0:
             rt = int(run_time_in_db) - 1
             self._db.update(model_name='SxclzySchedule',
@@ -468,9 +526,36 @@ class Sxclzy:
                             filter_dic={'name': name})
 
     @staticmethod
+    def _locate_str(raw_str, method, return_as_list=False):
+        raw_str = raw_str.strip()
+        method = method.strip()
+        new_sep_str = '^>^ sep ^<^'
+        method_lis = re.sub('([^\u4e00-\u9fa5a-zA-Z]+)', new_sep_str, method).split(new_sep_str)
+        sep_str = re.findall('([^\u4e00-\u9fa5a-zA-Z]+)', method)
+        sep_lis = list(set(sep_str))
+        sep_index_set = set()
+        raw_str_lis = [x for x in raw_str]
+        for sep in sep_lis:
+            sep_index = 0
+            while True:
+                if sep_index < 0:
+                    break
+                sep_index = raw_str.find(sep, sep_index + 1)
+                if sep_index > 0:
+                    sep_index_set.add(sep_index)
+
+        for sep_i in sep_index_set:
+            raw_str_lis[sep_i] = new_sep_str
+        new_lis = ''.join(raw_str_lis).split(new_sep_str)
+        if return_as_list:
+            return new_lis
+        new_dic = {n: v for n, v in zip(method_lis, new_lis)}
+        return new_dic
+
+    @staticmethod
     def _check_func(func_str):
         func_lis = func_str.split('\n')
-        sp = re.findall('( +)def ', func_lis[0])[0]
+        sp = re.findall('( *)def ', func_lis[0])[0]
         sps = len(sp)
         new_func_lis = list()
         for i in func_lis:
@@ -562,32 +647,34 @@ class Sxclzy:
         _type = re.findall('\'([^\']+)\'', str(type(thing)))[0]
 
 
-if __name__ == "__main__":
-    S = Sxclzy()
+# if __name__ == "__main__":
+S = Sxclzy()
+
+# S.count_down('08-19', 'm-d')
 
 
-    class A:
-        def test_a(self, name):
-            print('Hi {}! test is running'.format(name))
-            self.test_b(name)
+class A:
+    def test_a(self, name):
+        print('Hi {}! test is running'.format(name))
+        self.test_b(name)
 
-        def test_b(self, name):
-            print('call from test_a: ', 'hi {}'.format(name))
-
-
-    def test(name):
-        print('Hi {}! '.format(name))
+    def test_b(self, name):
+        print('call from test_a: ', 'hi {}'.format(name))
 
 
-    S.add_schedule(name='func1',
-                   func=test,
-                   schedule_dic={'second': '*/10'},
-                   run_times=3,
-                   args={'name': 'Lilei'},
-                   status=1,
-                   overwrite_if_exist=True
-                   )
-    get_res = S.get_schedules(print_pretty=True)
-    print(get_res)
-    # S.clear_schedules()
-    # S.start()
+def test(name):
+    print('Hi {}! '.format(name))
+
+
+S.add_schedule(name='func1',
+               func=test,
+               schedule={'second': '*/10'},
+               run_times=3,
+               args={'name': 'Lilei'},
+               status=1,
+               overwrite_if_exist=True
+               )
+# get_res = S.get_schedules(print_pretty=True)
+# print(get_res)
+# S.clear_schedules()
+S.start()

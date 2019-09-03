@@ -19,7 +19,7 @@ SL = Sxclzy()
 SL.add_schedule(
             name='your function name',          # （必须）任务名称，是唯一的，任务的标示
             func=your_function,                 # （必须）任务函数，注意不要加上括号()
-            schedule_dic={'second': '*/10'},    # （必须）任务安排，传入字典，具体解释见下面
+            schedule={'second': '*/10'},    # （必须）任务安排，传入字典，具体解释见下面
             run_times=3,                        # 任务运行的次数，默认为无数次，到达任务次数后需要重新add一次任务
             args={'func_arc': args},             # 传入任务函数的关键字字典，
             status=1,                           # 任务的启用状态，默认为1为启用，0 则不启用
