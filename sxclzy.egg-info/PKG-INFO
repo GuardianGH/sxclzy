@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: sxclzy
-Version: 0.2.1
+Version: 0.2.3
 Summary: a tool to schedule your functions
 Home-page: https://github.com/GuardianGH/sxclzy
 Author: GuardianAngel
@@ -154,7 +154,8 @@ Description: 这是做什么的？
         ```
         '2019,9,13,16,30,0'     # 2019年9月13日16点30分00秒
         ```
-        
+        注意全日期是必须的，若中间缺失某个值将无法正常部署
+        这样设置，方法只会被执行一次
 Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License

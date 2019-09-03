@@ -87,7 +87,8 @@ class Sxclzy:
                     mean_key = self._check_key(key)
                     raise ValueError('found "{}" in your schedule dict, maybe you mean "{}"'.format(key, mean_key))
                 if key in self._keys_dic:
-                    schedule[key] = self._keys_dic[key]
+                    val = schedule.pop(key)
+                    schedule[self._keys_dic[key]] = val
             func_name = re.findall('<function ([^ ]+) ', str(func))[0]
             func_dump = pickle.dumps(self._check_func(gs(func)))
             schedule_dic_dump = pickle.dumps(schedule)
@@ -110,7 +111,7 @@ class Sxclzy:
             func_dump = pickle.dumps(self._check_func(gs(func)))
             schedule_dic_dump = pickle.dumps(schedule)
             args_dump = pickle.dumps(args) if args is not None else ''
-            run_times = 3471292800 if run_times is None else run_times
+            run_times = 1
             self._db.add(model=SxclzySchedule,
                          add_dic={'name': name,
                                   'func_name': func_name,
@@ -652,7 +653,6 @@ if __name__ == "__main__":
 
     # S.count_down('08-19', 'm-d')
 
-
     class A:
         def test_a(self, name):
             print('Hi {}! test is running'.format(name))
@@ -668,9 +668,19 @@ if __name__ == "__main__":
 
     S.add_schedule(name='func1',
                    func=test,
-                   schedule={'second': '*/10'},
+                   # schedule={'S': '*/10'},
+                   schedule='2019,9,3,11,56,0',
                    run_times=3,
                    args={'name': 'Lilei'},
+                   status=1,
+                   overwrite_if_exist=True
+                   )
+    S.add_schedule(name='func2',
+                   func=test,
+                   schedule={'S': '*/10'},
+                   # schedule='2019,9,3,11,53,0',
+                   run_times=3,
+                   args={'name': 'Han Meimei'},
                    status=1,
                    overwrite_if_exist=True
                    )
