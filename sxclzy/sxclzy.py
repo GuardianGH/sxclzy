@@ -278,7 +278,7 @@ class Sxclzy:
             "%Y-%m-%d %H:%M:%S %w"
         """
         if is_str:
-            s = [int(x) for x in schedule_str.split(',')]
+            s = [int(x.strip()) for x in schedule_str.split(',')]
             time_sep = (datetime.datetime(s[0], s[1], s[2], s[3], s[4], s[5]) - datetime.datetime.now()).total_seconds()
             return time_sep
         y = int(time.strftime("%Y", time.localtime()))
